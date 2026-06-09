@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexBank — Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #1e1e2e;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --green: #00ffa3;
+    --red: #ff4d6d;
+    --gold: #ffd166;
+    --text: #e8e8f0;
+    --muted: #5a5a7a;
+    --glow: 0 0 30px rgba(0,229,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.25;
+  }
+  .orb1 { width: 500px; height: 500px; background: var(--accent2); top: -150px; right: -100px; }
+  .orb2 { width: 400px; height: 400px; background: var(--accent); bottom: -100px; left: -100px; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 40px 0 32px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 20px;
+    margin-bottom: 24px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* Setup screen */
+  #setup-screen, #dashboard-screen {
+    animation: fadeUp 0.5s ease both;
+  }
+
+  #dashboard-screen { display: none; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+
+  .card:hover { border-color: rgba(0,229,255,0.2); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .input-group {
+    margin-bottom: 16px;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+  }
+
+  .input-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  .input-group input::placeholder { color: var(--muted); }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,229,255,0.25);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .btn:hover::after { opacity: 1; }
+
+  /* Dashboard */
+  .account-hero {
+    background: linear-gradient(135deg, #1a0533 0%, #001a26 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .account-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(0,229,255,0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .account-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30%; left: -10%;
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .account-type {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .account-type::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  .account-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+
+  .account-number {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+  }
+
+  .balance-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .balance-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--green);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .balance-amount.updated {
+    transform: scale(1.05);
+    text-shadow: 0 0 30px rgba(0,255,163,0.5);
+  }
+
+  /* Action grid */
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .action-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: left;
+  }
+
+  .action-card:hover {
+    border-color: rgba(0,229,255,0.3);
+    transform: translateY(-3px);
+    box-shadow: var(--glow);
+  }
+
+  .action-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .icon-deposit { background: rgba(0,255,163,0.12); }
+  .icon-withdraw { background: rgba(255,77,109,0.12); }
+  .icon-balance { background: rgba(0,229,255,0.12); }
+  .icon-details { background: rgba(255,209,102,0.12); }
+
+  .action-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .action-desc {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 28px 28px 20px 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .modal-close {
+    width: 36px; height: 36px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--accent); }
+
+  .amount-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .amount-display .prefix {
+    font-size: 24px;
+    color: var(--muted);
+    vertical-align: middle;
+  }
+
+  #modal-amount-input {
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--text);
+    width: 200px;
+    text-align: center;
+    letter-spacing: -2px;
+  }
+
+  #modal-amount-input::placeholder { color: var(--border); }
+
+  .modal-balance-info {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .modal-balance-info span {
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  .btn-deposit { background: linear-gradient(135deg, #00b37e, #00ffa3); color: #000; }
+  .btn-withdraw { background: linear-gradient(135deg, #c1002a, #ff4d6d); color: #fff; }
+
+  /* Transaction log */
+  .tx-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .tx-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .tx-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .tx-info { flex: 1; }
+  .tx-type { font-size: 12px; font-weight: 500; }
+  .tx-time { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .tx-amount { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .tx-amount.credit { color: var(--green); }
+  .tx-amount.debit { color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 12px 24px;
+    font-size: 13px;
+    z-index: 200;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  /* Details card */
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .detail-val { font-size: 13px; font-weight: 500; }
+
+  /* Keyframes */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(60px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-badge">
+      <span class="logo-dot"></span>
+      Secure Banking
+    </div>
+    <h1>NexBank</h1>
+    <p class="subtitle">// ACCOUNT MANAGEMENT SYSTEM</p>
+  </div>
+
+  <!-- Setup Screen -->
+  <div id="setup-screen">
+    <div class="card">
+      <div class="card-title">// Open Account</div>
+
+      <div class="input-group">
+        <label>Account Holder Name</label>
+        <input type="text" id="input-name" placeholder="e.g. Arjun Sharma" autocomplete="off" />
+      </div>
+
+      <div class="input-group">
+        <label>Account Number</label>
+        <input type="text" id="input-number" placeholder="e.g. ACC-001234" autocomplete="off" />
+      </div>
+
+      <div class="input-group">
+        <label>Initial Deposit (₹)</label>
+        <input type="number" id="input-balance" placeholder="0.00" min="0" step="0.01" />
+      </div>
+
+      <button class="btn btn-primary" onclick="openAccount()">
+        Open Account →
+      </button>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboard-screen">
+
+    <!-- Account Hero Card -->
+    <div class="account-hero">
+      <div class="account-type">Savings Account</div>
+      <div class="account-name" id="disp-name">—</div>
+      <div class="account-number" id="disp-number">ACC-XXXXXX</div>
+      <div class="balance-label">Available Balance</div>
+      <div class="balance-amount" id="disp-balance">₹0.00</div>
+    </div>
+
+    <!-- Action Grid -->
+    <div class="action-grid">
+      <div class="action-card" onclick="openModal('deposit')">
+        <div class="action-icon icon-deposit">💳</div>
+        <div class="action-label">Deposit</div>
+        <div class="action-desc">Add funds</div>
+      </div>
+      <div class="action-card" onclick="openModal('withdraw')">
+        <div class="action-icon icon-withdraw">💸</div>
+        <div class="action-label">Withdraw</div>
+        <div class="action-desc">Take funds</div>
+      </div>
+      <div class="action-card" onclick="openModal('balance')">
+        <div class="action-icon icon-balance">📊</div>
+        <div class="action-label">Balance</div>
+        <div class="action-desc">Check funds</div>
+      </div>
+      <div class="action-card" onclick="openModal('details')">
+        <div class="action-icon icon-details">🪪</div>
+        <div class="action-label">Details</div>
+        <div class="action-desc">Account info</div>
+      </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="card">
+      <div class="card-title">// Transaction History</div>
+      <div class="tx-list" id="tx-list">
+        <div class="empty-state">No transactions yet</div>
+      </div>
+    </div>
+
+    <!-- Close Account -->
+    <button class="btn" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);margin-top:8px;" onclick="closeAccount()">
+      Close Session
+    </button>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Action</div>
+      <div class="modal-close" onclick="closeModal()">×</div>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg">Success</span>
+</div>
+
+<script>
+  let account = { name: '', number: '', balance: 0 };
+  let transactions = [];
+  let currentModal = null;
+
+  function openAccount() {
+    const name = document.getElementById('input-name').value.trim();
+    const number = document.getElementById('input-number').value.trim();
+    const balance = parseFloat(document.getElementById('input-balance').value);
+
+    if (!name) return showToast('Enter account holder name', 'error', '!');
+    if (!number) return showToast('Enter account number', 'error', '!');
+    if (isNaN(balance) || balance < 0) return showToast('Enter a valid initial balance', 'error', '!');
+
+    account = { name, number, balance };
+    if (balance > 0) {
+      transactions.push({ type: 'deposit', label: 'Initial Deposit', amount: balance, time: now() });
+    }
+
+    document.getElementById('setup-screen').style.display = 'none';
+    const dash = document.getElementById('dashboard-screen');
+    dash.style.display = 'block';
+
+    updateDisplay();
+    renderTransactions();
+    showToast(`Welcome, ${name}!`, 'success', '✓');
+  }
+
+  function updateDisplay() {
+    document.getElementById('disp-name').textContent = account.name;
+    document.getElementById('disp-number').textContent = account.number;
+    const el = document.getElementById('disp-balance');
+    el.textContent = '₹' + account.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    el.classList.add('updated');
+    setTimeout(() => el.classList.remove('updated'), 600);
+  }
+
+  function renderTransactions() {
+    const list = document.getElementById('tx-list');
+    if (transactions.length === 0) {
+      list.innerHTML = '<div class="empty-state">No transactions yet</div>';
+      return;
+    }
+    list.innerHTML = [...transactions].reverse().map(tx => `
+      <div class="tx-item">
+        <div class="tx-icon ${tx.type === 'deposit' ? 'icon-deposit' : 'icon-withdraw'}">
+          ${tx.type === 'deposit' ? '↓' : '↑'}
+        </div>
+        <div class="tx-info">
+          <div class="tx-type">${tx.label}</div>
+          <div class="tx-time">${tx.time}</div>
+        </div>
+        <div class="tx-amount ${tx.type === 'deposit' ? 'credit' : 'debit'}">
+          ${tx.type === 'deposit' ? '+' : '−'}₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openModal(type) {
+    currentModal = type;
+    const overlay = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+    const body = document.getElementById('modal-body');
+    overlay.classList.add('active');
+
+    if (type === 'deposit') {
+      title.textContent = 'Deposit Funds';
+      body.innerHTML = amountInputHTML('Deposit Amount', 'btn-deposit', 'deposit', 'Deposit →', 'green');
+    } else if (type === 'withdraw') {
+      title.textContent = 'Withdraw Funds';
+      body.innerHTML = amountInputHTML('Withdraw Amount', 'btn-withdraw', 'withdraw', 'Withdraw →', 'red');
+    } else if (type === 'balance') {
+      title.textContent = 'Current Balance';
+      body.innerHTML = `
+        <div style="text-align:center;padding:20px 0;">
+          <div style="font-size:11px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;">Available Balance</div>
+          <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--green);letter-spacing:-2px;">
+            ₹${account.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:12px;">${account.number}</div>
+        </div>
+        <button class="btn btn-primary" onclick="closeModal()">Done</button>
+      `;
+    } else if (type === 'details') {
+      title.textContent = 'Account Details';
+      body.innerHTML = `
+        <div>
+          <div class="detail-row">
+            <div class="detail-key">Holder</div>
+            <div class="detail-val">${account.name}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-key">Account No.</div>
+            <div class="detail-val">${account.number}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-key">Balance</div>
+            <div class="detail-val" style="color:var(--green);">₹${account.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-key">Transactions</div>
+            <div class="detail-val">${transactions.length}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-key">Account Type</div>
+            <div class="detail-val">Savings</div>
+          </div>
+        </div>
+        <div style="margin-top:24px;">
+          <button class="btn btn-primary" onclick="closeModal()">Close</button>
+        </div>
+      `;
+    }
+
+    setTimeout(() => {
+      const inp = document.getElementById('modal-amount-input');
+      if (inp) inp.focus();
+    }, 200);
+  }
+
+  function amountInputHTML(label, btnClass, action, btnText, color) {
+    return `
+      <div class="amount-display">
+        <span class="prefix">₹</span>
+        <input id="modal-amount-input" type="number" placeholder="0.00" min="0" step="0.01"
+          onkeydown="if(event.key==='Enter') executeAction('${action}')" />
+      </div>
+      <div class="modal-balance-info">
+        Available Balance: <span>₹${account.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+      </div>
+      <button class="btn ${btnClass}" onclick="executeAction('${action}')">${btnText}</button>
+    `;
+  }
+
+  function executeAction(action) {
+    const inp = document.getElementById('modal-amount-input');
+    const amount = parseFloat(inp.value);
+
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Enter a valid amount', 'error', '!');
+      inp.focus();
+      return;
+    }
+
+    if (action === 'deposit') {
+      account.balance += amount;
+      transactions.push({ type: 'deposit', label: 'Deposit', amount, time: now() });
+      updateDisplay();
+      renderTransactions();
+      closeModal();
+      showToast(`₹${amount.toLocaleString('en-IN')} deposited!`, 'success', '✓');
+    } else if (action === 'withdraw') {
+      if (amount > account.balance) {
+        showToast('Insufficient balance!', 'error', '✗');
+        return;
+      }
+      account.balance -= amount;
+      transactions.push({ type: 'withdraw', label: 'Withdrawal', amount, time: now() });
+      updateDisplay();
+      renderTransactions();
+      closeModal();
+      showToast(`₹${amount.toLocaleString('en-IN')} withdrawn!`, 'success', '✓');
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+    currentModal = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  function closeAccount() {
+    if (!confirm('End this session?')) return;
+    account = { name: '', number: '', balance: 0 };
+    transactions = [];
+    document.getElementById('dashboard-screen').style.display = 'none';
+    const setup = document.getElementById('setup-screen');
+    setup.style.display = 'block';
+    document.getElementById('input-name').value = '';
+    document.getElementById('input-number').value = '';
+    document.getElementById('input-balance').value = '';
+    showToast('Session ended. Goodbye!', 'success', '✓');
+  }
+
+  function showToast(msg, type = 'success', icon = '✓') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').textContent = icon;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => { toast.className = `toast ${type}`; }, 3000);
+  }
+
+  function now() {
+    return new Date().toLocaleString('en-IN', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  // Allow Enter to submit setup
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  document.getElementById('input-balance').addEventListener('keydown', e => {
+    if (e.key === 'Enter') openAccount();
+  });
+</script>
+</body>
+</html>
